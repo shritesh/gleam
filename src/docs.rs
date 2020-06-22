@@ -115,6 +115,11 @@ pub fn generate_html(
                 t.sort();
                 t
             },
+            constants: {
+                let mut c: Vec<_> = module.ast.statements.iter().flat_map(constant).collect();
+                c.sort();
+                c
+            },
         };
 
         let mut path = output_dir.clone();
@@ -166,6 +171,26 @@ fn function<'a>(statement: &'a TypedStatement) -> Option<Function<'a>> {
             name,
             documentation: markdown_documentation(doc),
             signature: print(formatter.docs_fn_signature(true, name, args, ret.clone())),
+        }),
+
+        _ => None,
+    }
+}
+
+fn constant<'a>(statement: &'a TypedStatement) -> Option<Constant<'a>> {
+    let mut formatter = format::Formatter::new();
+    match statement {
+        Statement::ModuleConstant {
+            doc,
+            public: true,
+            name,
+            typ,
+            value,
+            ..
+        } => Some(Constant {
+            name,
+            documentation: markdown_documentation(doc),
+            definition: print(formatter.docs_module_constant(true, name, typ, value)),
         }),
 
         _ => None,
@@ -282,6 +307,13 @@ struct Function<'a> {
     documentation: String,
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Constant<'a> {
+    name: &'a str,
+    definition: String,
+    documentation: String,
+}
+
 #[derive(PartialEq, Eq, PartialOrd, Ord, Debug)]
 struct TypeConstructor {
     definition: String,
@@ -322,5 +354,6 @@ struct ModuleTemplate<'a> {
     modules: &'a [Link],
     functions: Vec<Function<'a>>,
     types: Vec<Type<'a>>,
+    constants: Vec<Constant<'a>>,
     documentation: String,
 }
